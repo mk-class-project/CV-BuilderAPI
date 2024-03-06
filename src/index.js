@@ -2,9 +2,9 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 
-import connectToMongoDB from './db/mongodb';
+import connectToMongoDB from './db/mongodb.js';
 
-import apiRoutes from './routes/index.routes';
+import apiRoutes from './routes/index.routes.js';
 
 dotenv.config();
 connectToMongoDB();

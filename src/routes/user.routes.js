@@ -1,13 +1,13 @@
 import express from 'express';
-import verifyToken from '../middlewares/jwt.middleware';
-import UserController from '../controllers/user.controller';
+import { verifyToken } from '../middlewares/jwt.middleware.js';
+import { getAllUsers, getUserById, createUser, updateUserById, deleteUserById } from '../controllers/user.controller.js';
 
 const router = express.Router();
 
-router.get('/', UserController.getAllUsers);
-router.get('/:id', UserController.getUserById);
-router.post('/', UserController.createUser);
-router.put('/:id', verifyToken, UserController.updateUserById);
-router.delete('/:id', verifyToken, UserController.deleteUserById);
+router.get('/', verifyToken, getAllUsers);
+router.get('/:id', getUserById);
+router.post('/', createUser);
+router.put('/:id', verifyToken, updateUserById);
+router.delete('/:id', verifyToken, deleteUserById);
 
 export default router;
