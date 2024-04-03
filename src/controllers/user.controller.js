@@ -39,7 +39,7 @@ export const createUser = async (req, res) => {
 };
 
 export const updateUserById = async (req, res) => {
-    const { _id, password: currentPassword, newPassword, ...updateData } = req.body;
+    const { _id, password, newPassword, ...updateData } = req.body;
 
     try {
         const user = await User.findById(_id);
@@ -48,7 +48,7 @@ export const updateUserById = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
         
-        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ error: 'Current password is incorrect' });
         }
