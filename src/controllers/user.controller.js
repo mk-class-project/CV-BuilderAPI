@@ -12,6 +12,46 @@ export const getAllUsers = async (req, res) => {
     }
 };
 
+export const updateUserById = async (req, res) => {
+    const { _id, password, newPassword, ...updateData } = req.body;
+
+    if (!password) {
+        return res.status(400).json({ error: 'Current password is required' });
+    }
+
+    try {
+        const user = await User.findById(_id);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Current password is incorrect' });
+        }
+        
+        if (newPassword && newPassword.trim()) {
+            const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+            updateData.password = hashedPassword;
+        }
+
+        if (!newPassword || !newPassword.trim()) {
+            delete updateData.password;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(_id, updateData, { new: true });
+
+        const { password: _pwd, ...userWithoutPassword } = updatedUser.toObject();
+        
+        res.status(200).json(userWithoutPassword);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+
 export const getUserById = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
@@ -32,40 +72,6 @@ export const createUser = async (req, res) => {
         const response = await User.create(user);
 
         res.status(201).json(response);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
-
-export const updateUserById = async (req, res) => {
-    const { _id, password, newPassword, ...updateData } = req.body;
-
-    try {
-        const user = await User.findById(_id);
-        
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ error: 'Current password is incorrect' });
-        }
-        
-        if (newPassword) {
-            const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
-            updateData.password = hashedPassword;
-        }
-
-        if (!newPassword) {
-            delete updateData.password;
-        }
-
-        const updatedUser = await User.findByIdAndUpdate(_id, updateData, { new: true });
-        const { password, ...userWithoutPassword } = updatedUser.toObject();
-        
-        res.status(200).json(userWithoutPassword);
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });
