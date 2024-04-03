@@ -1,4 +1,7 @@
+import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
+
+const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS);
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -23,41 +26,48 @@ export const getUserById = async (req, res) => {
 
 export const createUser = async (req, res) => {
     try {
-        const user = await User.create(req.body);
-
-        // Chiffrer le mot de passe
-        user.password = await bcrypt.hash(user.password, process.env.SALT_ROUNDS);
-        await user.save();
+        const user = req.body;  
+        // Chiffrer le mot de passe      
+        user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
         const response = await User.create(user);
-                          
-        res.status(201).json(user);
+
+        res.status(201).json(response);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
 
 export const updateUserById = async (req, res) => {
+    const { _id, password: currentPassword, newPassword, ...updateData } = req.body;
+
     try {
-
-        const updatedUser = req.body;
-        const user = await User.findById(req.body._id);
-
+        const user = await User.findById(_id);
         
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
-
-        // Si le mot de passe est inclus dans la requête, le chiffrer
-        if (bcrypt.compare(updatedUser.password, user.password)) {
-            const hashedPassword = await bcrypt.hash(password, process.env.SALT_ROUNDS);
-            req.body.password = hashedPassword;
-
-            const response = await User.findByIdAndUpdate(req.body._id, req.body);
-        }else{
-            return res.status(401).json({ error: 'Invalid password' });
+        
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Current password is incorrect' });
         }
-        res.json(user);
+        
+        if (newPassword) {
+            const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+            updateData.password = hashedPassword;
+        }
+
+        if (!newPassword) {
+            delete updateData.password;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(_id, updateData, { new: true });
+        const { password, ...userWithoutPassword } = updatedUser.toObject();
+        
+        res.status(200).json(userWithoutPassword);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
