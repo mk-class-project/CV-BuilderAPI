@@ -1,4 +1,7 @@
+import bcrypt from 'bcrypt';
 import User from '../models/user.model.js';
+
+const SALT_ROUNDS = parseInt(process.env.SALT_ROUNDS);
 
 export const getAllUsers = async (req, res) => {
     try {
@@ -8,6 +11,46 @@ export const getAllUsers = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
+export const updateUserById = async (req, res) => {
+    const { _id, password, newPassword, ...updateData } = req.body;
+
+    if (!password) {
+        return res.status(400).json({ error: 'Current password is required' });
+    }
+
+    try {
+        const user = await User.findById(_id);
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ error: 'Current password is incorrect' });
+        }
+        
+        if (newPassword && newPassword.trim()) {
+            const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+            updateData.password = hashedPassword;
+        }
+
+        if (!newPassword || !newPassword.trim()) {
+            delete updateData.password;
+        }
+
+        const updatedUser = await User.findByIdAndUpdate(_id, updateData, { new: true });
+
+        const { password: _pwd, ...userWithoutPassword } = updatedUser.toObject();
+        
+        res.status(200).json(userWithoutPassword);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
 
 export const getUserById = async (req, res) => {
     try {
@@ -23,21 +66,14 @@ export const getUserById = async (req, res) => {
 
 export const createUser = async (req, res) => {
     try {
-        const user = await User.create(req.body);
-        res.status(201).json(user);
-    } catch (error) {
-        res.status(500).json({ error: 'Internal server error' });
-    }
-};
+        const user = req.body;  
+        // Chiffrer le mot de passe      
+        user.password = await bcrypt.hash(user.password, SALT_ROUNDS);
+        const response = await User.create(user);
 
-export const updateUserById = async (req, res) => {
-    try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        if (!user) {
-            return res.status(404).json({ error: 'User not found' });
-        }
-        res.json(user);
+        res.status(201).json(response);
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
