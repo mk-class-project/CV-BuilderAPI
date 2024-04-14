@@ -10,7 +10,10 @@ dotenv.config();
 connectToMongoDB();
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:1234', // parcel server
+  credentials: true
+}));
 app.use(express.json());
 
 app.use('/api/v1', apiRoutes);
