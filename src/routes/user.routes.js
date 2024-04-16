@@ -5,7 +5,7 @@ import { getAllUsers, getUserById, createUser, updateUserById, deleteUserById } 
 const router = express.Router();
 
 router.get('/', verifyToken, getAllUsers);
-router.get('/:id', getUserById);
+router.get('/:id', verifyToken, getUserById);
 router.post('/', createUser);
 router.put('/', verifyToken, updateUserById);
 router.delete('/:id', verifyToken, deleteUserById);

@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 
-const userSchema = new mongoose.Schema({
+const userSchema = new Schema({
     firstname: {
         type: String,
         default: ''
@@ -39,6 +39,7 @@ const userSchema = new mongoose.Schema({
         enum: ['user', 'admin', 'superadmin'],
         default: 'user'
     },
+    cvs: [{ type: Schema.Types.ObjectId, ref: 'CV' }],  // References CVs
     createdAt: {
         type: Date,
         default: Date.now
